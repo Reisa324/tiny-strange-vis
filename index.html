@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tiny Strange — VIS Booklet</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="swarm.js"></script>
+  <script>
+    const swarmPages = () => Array.from(document.querySelectorAll('section.page'));
+    const swarmRunPages = new Set();
+    let swarmCalmSince = 0;
+    let swarmHasScrolled = false;
+
+    const inSwarmViewport = (node) => {
+      const rect = node.getBoundingClientRect();
+      return rect.bottom > 0 && rect.top < window.innerHeight && rect.right > 0 && rect.left < window.innerWidth;
+    };
+
+    const hasVisibleUnfinishedContent = () => {
+      const nodes = document.querySelectorAll(
+        'main .sw-hide, main .sw-nopaint, main sw-ghost, ' +
+        '.sw-layer .sw-sel:not(.sw-out), .sw-layer .sw-fill:not(.sw-out), ' +
+        '.sw-layer .sw-line:not(.sw-out), .sw-layer .sw-clone'
+      );
+      return Array.from(nodes).some(inSwarmViewport);
+    };
+
+    const finishSwarmRun = () => {
+      swarmRunPages.forEach((page) => page.setAttribute('data-swarm-skip', ''));
+      swarmRunPages.clear();
+    };
+
+    const startSwarmIfNeeded = () => {
+      if (!swarmHasScrolled || Swarm.state()) return;
+      const pages = swarmPages().filter((page) =>
+        !page.hasAttribute('data-swarm-skip') && inSwarmViewport(page)
+      );
+      if (!pages.length) return;
+      pages.forEach((page) => swarmRunPages.add(page));
+      Swarm.run({ agents: 5, mobileAgents: 5, tour: false, returnToTop: false, maxSeconds: 600 });
+    };
+
+    const watchSwarm = (now) => {
+      const state = Swarm.state();
+      if (!state) {
+        finishSwarmRun();
+        startSwarmIfNeeded();
+        swarmCalmSince = 0;
+      } else {
+        if (!state.ending) {
+          swarmPages().forEach((page) => {
+            if (!page.hasAttribute('data-swarm-skip') && inSwarmViewport(page)) swarmRunPages.add(page);
+          });
+        }
+        if (state.ending || hasVisibleUnfinishedContent()) {
+          swarmCalmSince = 0;
+        } else if (!swarmCalmSince) {
+          swarmCalmSince = now;
+        } else if (now - swarmCalmSince >= 800) {
+          Swarm.end();
+          swarmCalmSince = 0;
+        }
+      }
+      window.requestAnimationFrame(watchSwarm);
+    };
+
+    window.addEventListener('scroll', () => {
+      swarmHasScrolled = true;
+    }, { passive: true });
+    window.requestAnimationFrame(watchSwarm);
+  </script>
+</head>
+<body>
+  <main class="booklet" aria-label="Tiny Strange VIS booklet, pages 1 to 5">
+    <section class="page cover" aria-label="Page 1: Cover">
+      <img class="cover-shadow" src="assets/stool-shadow.png" alt="" draggable="false">
+      <img class="cover-rabbit" src="assets/奶油色长耳兔坐在工业风木凳上.png" alt="Cream-coloured long-eared rabbit sitting on an industrial wooden stool" draggable="false">
+    </section>
+
+    <section class="page overview" aria-label="Page 2: Brand and Project Overview">
+      <img class="artwork-title title-tiny" src="assets/tiny.svg" alt="TINY" draggable="false">
+      <img class="artwork-title title-strange" src="assets/strange.svg" alt="STRANGE" draggable="false">
+
+      <div class="overview-credit">Brand and
+Project
+Overview
+
+Yu Yuedong
+YEAR: 2026</div>
+
+      <div class="body-copy overview-main">Tiny Strange is an independent design toy
+brand from China. It uses AI and designer
+refinement to turn a customer's mood and
+keywords into a small collectible plush friend.
+Its main overseas market is the United States.
+
+Soft Friends is the official product series. The
+customer chooses a mood, colours and one
+keyword. AI gives the first character idea, and
+a designer will adjust the face, colours and
+small symbols. Each character uses one fixed
+18 cm plush body, with a character card and
+a gift box.
+
+The first customers are Gen Z and young
+millennial consumers aged 18 to 30 in the
+United States. They like character toys, desk
+objects and personalised gifts. Different
+moods deserve different little friends. Being a
+little strange is not a problem. Soft, Odd and
+Personal guide the brand.</div>
+
+      <div class="body-copy overview-details">SOFT: The plush and its character
+have a gentle feel.
+ODD: A small strange detail makes
+the character different.
+PERSONAL: The customer's mood,
+colours and keyword.
+
+PRODUCT:<span class="tracking-plus-3"> 18 cm collectible plush,</span>
+dense minky pile about 2 to 4mm.
+Includes a character card and a box.
+
+ORIGIN: China
+MARKET: United States</div>
+    </section>
+
+    <section class="page image-page" aria-label="Page 3: Rabbit pattern">
+      <img class="pattern-image" src="assets/米白色绒面兔子拼布图案.png" alt="Pattern of cream-coloured plush rabbits with small accessories" draggable="false">
+    </section>
+
+    <section class="page image-page" aria-label="Page 4: Rabbit in a box">
+      <img class="box-image" src="assets/纸箱中的奶油色兔兔.png" alt="Cream-coloured rabbit plush inside a cardboard box" draggable="false">
+    </section>
+
+    <section class="page peer-page" aria-label="Page 5: Peer brands">
+      <img class="peer-art" src="assets/peer.svg" alt="PEER" draggable="false">
+
+      <img class="logo logo-jellycat" src="assets/jellycat.png" alt="Jellycat London" draggable="false">
+      <img class="logo logo-squishmallows" src="assets/squishmallows.png" alt="Original Squishmallows" draggable="false">
+      <img class="logo logo-build-a-bear" src="assets/build-a-bear.png" alt="Build-A-Bear Workshop" draggable="false">
+
+      <div class="body-copy peer-copy peer-jellycat">Jellycat
+A premium design-led plush toy and
+gift brand from London.
+
+Jellycat uses black, white and orange,
+with bright blue on some digital
+pages. The range includes animal
+plush, Amuseables characters, bags,
+charms, baby gifts and books. Its
+philosophy is playfulness, creativity
+and sharing joy.
+
+Key observation: Original characters
+<span class="tracking-minus-10">and playful retail can make plush toys</span>
+become emotional gifts. Jellycat uses
+a brand-led character catalogue.</div>
+
+      <div class="body-copy peer-copy peer-squishmallows">Squishmallows
+A soft character-led collectible plush
+<span class="tracking-minus-12">and lifestyle brand for fans of all ages.
+</span>
+Squishmallows uses a soft
+multicolour palette: teal, pink, purple,
+yellow, orange and lime green. The
+plush comes in many sizes, including
+original characters, seasonal
+editions, licensed collaborations,
+mini collectibles and pillows. The
+brand focuses on comfort through
+softness.
+
+Key observation: Names, biographies
+and collecting can build a large
+character community. It has a large
+character library.</div>
+
+      <div class="body-copy peer-copy peer-build-a-bear">A global retailtainment brand. It
+combines personalised plush toys
+with interactive store experiences.
+
+Build-A-Bear uses blue, warm yellow
+and red, with multicolour letters in its
+logo. Products include make-your-
+own and pre-stuffed plush, sounds,
+scents, clothing, accessories, gifts
+and licensed characters. The brand
+wants plush friends to stay with
+people in important life moments.
+
+Key observation: Customers join the
+making process through stuffing,
+dressing and naming.</div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,76 @@
+{
+  "source": "vis-booklet-5pages.vectorcraft (temporary copy only)",
+  "method": "type.convertToPointType followed by text.getRange with effective:true",
+  "units": {
+    "position": "mm relative to each 297×210 mm artboard",
+    "size": "pt",
+    "leading": "pt",
+    "tracking": "thousandths of an em"
+  },
+  "kerning": "auto; no manual pair values in the editing data; CSS uses font-kerning: normal",
+  "justification": "Left",
+  "objects": [
+    {
+      "id": 1258,
+      "page": 2,
+      "position": {"left": 12.0000119527239, "top": 38.9315210991892, "width": 65.249999999999, "height": 57.4496076486326},
+      "lines": ["Brand and", "Project", "Overview", "", "Yu Yuedong", "YEAR: 2026"],
+      "runs": [
+        {"text": "Brand and\nProject\nOverview\n\nYu Yuedong\nYEAR: 2026", "fontFamily": "Fraunces", "fontStyle": "Regular", "size": 16, "leading": 20, "tracking": 0}
+      ]
+    },
+    {
+      "id": 1260,
+      "page": 2,
+      "position": {"left": 80.914033116746, "top": 57.8728365391916, "width": 111.752645502644, "height": 126.39246479149},
+      "lines": ["Tiny Strange is an independent design toy", "brand from China. It uses AI and designer", "refinement to turn a customer's mood and", "keywords into a small collectible plush friend.", "Its main overseas market is the United States.", "", "Soft Friends is the official product series. The", "customer chooses a mood, colours and one", "keyword. AI gives the first character idea, and", "a designer will adjust the face, colours and", "small symbols. Each character uses one fixed", "18 cm plush body, with a character card and", "a gift box.", "", "The first customers are Gen Z and young", "millennial consumers aged 18 to 30 in the", "United States. They like character toys, desk", "objects and personalised gifts. Different", "moods deserve different little friends. Being a", "little strange is not a problem. Soft, Odd and", "Personal guide the brand."],
+      "runs": [
+        {"text": "Tiny Strange is an independent design toy\nbrand from China. It uses AI and designer\nrefinement to turn a customer's mood and\nkeywords into a small collectible plush friend.\nIts main overseas market is the United States.\n\nSoft Friends is the official product series. The\ncustomer chooses a mood, colours and one\nkeyword. AI gives the first character idea, and\na designer will adjust the face, colours and\nsmall symbols. Each character uses one fixed\n18 cm plush body, with a character card and\na gift box.\n\nThe first customers are Gen Z and young\nmillennial consumers aged 18 to 30 in the\nUnited States. They like character toys, desk\nobjects and personalised gifts. Different\nmoods deserve different little friends. Being a\nlittle strange is not a problem. Soft, Odd and\nPersonal guide the brand.", "fontFamily": "Sofia Sans", "fontStyle": "Light", "size": 16, "leading": 16, "tracking": -5}
+      ]
+    },
+    {
+      "id": 1264,
+      "page": 2,
+      "position": {"left": 196.498689201402, "top": 57.8728365391916, "width": 88.501322751322, "height": 86.8813536803788},
+      "lines": ["SOFT: The plush and its character", "have a gentle feel.", "ODD: A small strange detail makes", "the character different.", "PERSONAL: The customer's mood,", "colours and keyword.", "", "PRODUCT: 18 cm collectible plush,", "dense minky pile about 2 to 4mm.", "Includes a character card and a box.", "", "ORIGIN: China", "MARKET: United States"],
+      "ignoredRuns": ["Adobe Song Std Light: one meaningless newline only; not used in HTML"],
+      "runs": [
+        {"text": "SOFT: The plush and its character\nhave a gentle feel.\nODD: A small strange detail makes\nthe character different.\nPERSONAL: The customer's mood,\ncolours and keyword.", "fontFamily": "Sofia Sans", "fontStyle": "Light", "size": 16, "leading": 16, "tracking": -5},
+        {"text": "\n\nPRODUCT:", "fontFamily": "Sofia Sans", "fontStyle": "Light", "size": 16, "leading": 16, "tracking": -5},
+        {"text": " 18 cm collectible plush,\n", "fontFamily": "Sofia Sans", "fontStyle": "Light", "size": 16, "leading": 16, "tracking": 3},
+        {"text": "dense minky pile about 2 to 4mm.\nIncludes a character card and a box.\n\nORIGIN: China\nMARKET: United States", "fontFamily": "Sofia Sans", "fontStyle": "Light", "size": 16, "leading": 16, "tracking": -5}
+      ]
+    },
+    {
+      "id": 1261,
+      "page": 5,
+      "position": {"left": 11.8320225347371, "top": 95.691053523469, "width": 90.0914268169728, "height": 98.8453086832799},
+      "lines": ["Jellycat", "A premium design-led plush toy and", "gift brand from London.", "", "Jellycat uses black, white and orange,", "with bright blue on some digital", "pages. The range includes animal", "plush, Amuseables characters, bags,", "charms, baby gifts and books. Its", "philosophy is playfulness, creativity", "and sharing joy.", "", "Key observation: Original characters", "and playful retail can make plush toys", "become emotional gifts. Jellycat uses", "a brand-led character catalogue."],
+      "runs": [
+        {"text": "Jellycat\nA premium design-led plush toy and\ngift brand from London.\n\nJellycat uses black, white and orange,\nwith bright blue on some digital\npages. The range includes animal\nplush, Amuseables characters, bags,\ncharms, baby gifts and books. Its\nphilosophy is playfulness, creativity\nand sharing joy.\n\nKey observation: Original characters\n", "fontFamily": "Sofia Sans", "fontStyle": "Light", "size": 16, "leading": 16, "tracking": -5},
+        {"text": "and playful retail can make plush toys\n", "fontFamily": "Sofia Sans", "fontStyle": "Light", "size": 16, "leading": 16, "tracking": -10},
+        {"text": "become emotional gifts. Jellycat uses\na brand-led character catalogue.", "fontFamily": "Sofia Sans", "fontStyle": "Light", "size": 16, "leading": 16, "tracking": -5}
+      ]
+    },
+    {
+      "id": 1262,
+      "page": 5,
+      "position": {"left": 104.249350577064, "top": 95.691053523469, "width": 90.091426816973, "height": 123.560346923652},
+      "lines": ["Squishmallows", "A soft character-led collectible plush", "and lifestyle brand for fans of all ages.", "", "Squishmallows uses a soft", "multicolour palette: teal, pink, purple,", "yellow, orange and lime green. The", "plush comes in many sizes, including", "original characters, seasonal", "editions, licensed collaborations,", "mini collectibles and pillows. The", "brand focuses on comfort through", "softness.", "", "Key observation: Names, biographies", "and collecting can build a large", "character community. It has a large", "character library."],
+      "runs": [
+        {"text": "Squishmallows\nA soft character-led collectible plush\n", "fontFamily": "Sofia Sans", "fontStyle": "Light", "size": 16, "leading": 16, "tracking": -5},
+        {"text": "and lifestyle brand for fans of all ages.\n", "fontFamily": "Sofia Sans", "fontStyle": "Light", "size": 16, "leading": 16, "tracking": -12},
+        {"text": "\nSquishmallows uses a soft\nmulticolour palette: teal, pink, purple,\nyellow, orange and lime green. The\nplush comes in many sizes, including\noriginal characters, seasonal\neditions, licensed collaborations,\nmini collectibles and pillows. The\nbrand focuses on comfort through\nsoftness.\n\nKey observation: Names, biographies\nand collecting can build a large\ncharacter community. It has a large\ncharacter library.", "fontFamily": "Sofia Sans", "fontStyle": "Light", "size": 16, "leading": 16, "tracking": -5}
+      ]
+    },
+    {
+      "id": 1263,
+      "page": 5,
+      "position": {"left": 196.666678619392, "top": 95.691053523469, "width": 90.0914268169765, "height": 123.560346923652},
+      "lines": ["A global retailtainment brand. It", "combines personalised plush toys", "with interactive store experiences.", "", "Build-A-Bear uses blue, warm yellow", "and red, with multicolour letters in its", "logo. Products include make-your-", "own and pre-stuffed plush, sounds,", "scents, clothing, accessories, gifts", "and licensed characters. The brand", "wants plush friends to stay with", "people in important life moments.", "", "Key observation: Customers join the", "making process through stuffing,", "dressing and naming."],
+      "runs": [
+        {"text": "A global retailtainment brand. It\ncombines personalised plush toys\nwith interactive store experiences.\n\nBuild-A-Bear uses blue, warm yellow\nand red, with multicolour letters in its\nlogo. Products include make-your-\nown and pre-stuffed plush, sounds,\nscents, clothing, accessories, gifts\nand licensed characters. The brand\nwants plush friends to stay with\npeople in important life moments.\n\nKey observation: Customers join the\nmaking process through stuffing,\ndressing and naming.", "fontFamily": "Sofia Sans", "fontStyle": "Light", "size": 16, "leading": 16, "tracking": -5}
+      ]
+    }
+  ]
+}

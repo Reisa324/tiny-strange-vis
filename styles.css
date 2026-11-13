@@ -1,0 +1,213 @@
+@font-face {
+  font-family: "Fraunces";
+  src: url("assets/fonts/Fraunces-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Sofia Sans";
+  src: url("assets/fonts/SofiaSans-Light.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+}
+
+:root {
+  --cocoa: #493732;
+  --paper: #ffffff;
+  --mm: calc(100vw / 297);
+  --pt: calc(25.4 / 72 * var(--mm));
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+}
+
+body {
+  overflow-x: hidden;
+  color: var(--cocoa);
+}
+
+.booklet {
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+}
+
+.page {
+  position: relative;
+  width: 100vw;
+  height: calc(210 * var(--mm));
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--paper);
+  isolation: isolate;
+}
+
+.page img {
+  position: absolute;
+  display: block;
+  max-width: none;
+  user-select: none;
+}
+
+.cover-shadow {
+  left: calc(204.808666666667 * var(--mm));
+  top: calc(179.154666666667 * var(--mm));
+  width: calc(72.0513333333333 * var(--mm));
+  height: calc(33.782 * var(--mm));
+}
+
+.cover-rabbit {
+  left: calc(199.731399903413 * var(--mm));
+  top: calc(99.9873015873106 * var(--mm));
+  width: calc(80.8277002890985 * var(--mm));
+  height: calc(100.998605887091 * var(--mm));
+}
+
+.title-tiny {
+  left: calc(12.081713019466 * var(--mm));
+  top: calc(12.06748046875 * var(--mm));
+  width: calc(41.5417509331025 * var(--mm));
+  height: calc(13.8640977647569 * var(--mm));
+}
+
+.title-strange {
+  left: calc(196.66667861939 * var(--mm));
+  top: calc(11.8134046766493 * var(--mm));
+  width: calc(84.7417146270872 * var(--mm));
+  height: calc(14.3722493489583 * var(--mm));
+}
+
+.overview-credit,
+.body-copy {
+  position: absolute;
+  margin: 0;
+  text-align: left;
+  font-kerning: normal;
+  white-space: pre;
+}
+
+.overview-credit {
+  left: calc(12.0000119527239 * var(--mm));
+  top: calc(38.9315210991892 * var(--mm));
+  width: calc(65.249999999999 * var(--mm));
+  height: calc(57.4496076486326 * var(--mm));
+  font-family: "Fraunces", serif;
+  font-size: calc(16 * var(--pt));
+  font-weight: 400;
+  line-height: calc(20 * var(--pt));
+  letter-spacing: 0;
+}
+
+.body-copy {
+  font-family: "Sofia Sans", sans-serif;
+  font-size: calc(16 * var(--pt));
+  font-weight: 300;
+  line-height: calc(16 * var(--pt));
+  letter-spacing: calc(-5 / 1000 * 16 * var(--pt));
+}
+
+.overview-main {
+  left: calc(80.914033116746 * var(--mm));
+  top: calc(57.8728365391916 * var(--mm));
+  width: calc(111.752645502644 * var(--mm));
+  height: calc(126.39246479149 * var(--mm));
+}
+
+.overview-details {
+  left: calc(196.498689201402 * var(--mm));
+  top: calc(57.8728365391916 * var(--mm));
+  width: calc(88.501322751322 * var(--mm));
+  height: calc(86.8813536803788 * var(--mm));
+}
+
+.tracking-plus-3 {
+  letter-spacing: calc(3 / 1000 * 16 * var(--pt));
+}
+
+.tracking-minus-10 {
+  letter-spacing: calc(-10 / 1000 * 16 * var(--pt));
+}
+
+.tracking-minus-12 {
+  letter-spacing: calc(-12 / 1000 * 16 * var(--pt));
+}
+
+.pattern-image {
+  left: calc(-0.0805675014814881 * var(--mm));
+  top: 0;
+  width: calc(296.7949133917 * var(--mm));
+  height: calc(210.03316607678 * var(--mm));
+}
+
+.box-image {
+  left: 0;
+  top: calc(0.111078616023583 * var(--mm));
+  width: calc(297.000023905447 * var(--mm));
+  height: calc(209.811008844733 * var(--mm));
+}
+
+.peer-art {
+  z-index: 0;
+  left: calc(12.0000119527228 * var(--mm));
+  top: calc(96.4851922929434 * var(--mm));
+  width: calc(273.000000000002 * var(--mm));
+  height: calc(101.795552455129 * var(--mm));
+}
+
+.logo,
+.peer-copy {
+  z-index: 1;
+}
+
+.logo-jellycat {
+  left: calc(12.0000119527228 * var(--mm));
+  top: calc(53.1355466066978 * var(--mm));
+  width: calc(88.3333333333323 * var(--mm));
+  height: calc(31.0441426146007 * var(--mm));
+}
+
+.logo-squishmallows {
+  left: calc(104.333345286057 * var(--mm));
+  top: calc(42.2213558879649 * var(--mm));
+  width: calc(88.3333333333338 * var(--mm));
+  height: calc(41.9583333333335 * var(--mm));
+}
+
+.logo-build-a-bear {
+  left: calc(196.666678619392 * var(--mm));
+  top: calc(41.6257139126565 * var(--mm));
+  width: calc(89.2740740740737 * var(--mm));
+  height: calc(42.5539753086418 * var(--mm));
+}
+
+.peer-copy {
+  top: calc(95.691053523469 * var(--mm));
+  width: calc(90.0914268169728 * var(--mm));
+}
+
+.peer-jellycat {
+  left: calc(11.8320225347371 * var(--mm));
+  height: calc(98.8453086832799 * var(--mm));
+}
+
+.peer-squishmallows {
+  left: calc(104.249350577064 * var(--mm));
+  height: calc(123.560346923652 * var(--mm));
+}
+
+.peer-build-a-bear {
+  left: calc(196.666678619392 * var(--mm));
+  height: calc(123.560346923652 * var(--mm));
+}
