@@ -1,0 +1,3 @@
+/* The preview panel does not need an expensive live backdrop filter. */
+.controls{backdrop-filter:none;background:#fffffff7}
+#detail-canvas{visibility:hidden;pointer-events:none}

@@ -1,0 +1,1 @@
+window.PREVIEW_MANIFEST = {"version": 2, "fps": 120, "frame_start": 1, "frame_end": 1800, "frame_count": 1800, "width": 3840, "height": 2160, "alpha": true};

@@ -1,0 +1,10 @@
+{
+  "release": "2026-11-17-final-stable4",
+  "route": "/box-scroll-test/",
+  "fps": 120,
+  "frame_count": 1800,
+  "duration_seconds": 15,
+  "render_policy": "native single-frame geometry",
+  "detail": "4K q95 at rest",
+  "source": "user-confirmed final preview"
+}
