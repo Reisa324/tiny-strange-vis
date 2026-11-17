@@ -1,10 +1,15 @@
 {
-  "release": "2026-11-17-final-stable4",
+  "release": "2026-11-17-network-pack-v1",
   "route": "/box-scroll-test/",
   "fps": 120,
   "frame_count": 1800,
   "duration_seconds": 15,
   "render_policy": "native single-frame geometry",
   "detail": "4K q95 at rest",
-  "source": "user-confirmed final preview"
+  "source": "user-confirmed final preview",
+  "transport": "30 lossless WebP byte packs, compressed preload with bounded decoding",
+  "asset_version": "ts120-525115ad5e3b13f0",
+  "compressed_bytes_1080p": 84460032,
+  "decode_budget_mib_desktop": 256,
+  "decode_budget_mib_low_memory": 128
 }

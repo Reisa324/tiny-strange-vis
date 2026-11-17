@@ -9,10 +9,12 @@
   <link rel="stylesheet" href="performance.css">
   <script defer src="frames.js"></script>
   <script defer src="./frames_web_120fps_optimized/optimized_frames.js"></script>
-  <script defer src="sequence-cache.js?v=120fps-continuous-3"></script>
+  <script defer src="packed-frames.js?v=network-pack-1"></script>
+  <script defer src="frame-source.js?v=network-pack-1"></script>
+  <script defer src="sequence-cache.js?v=network-pack-1"></script>
   <script defer src="frame-presenter.js?v=120fps-stable-4"></script>
   <script defer src="scroll-motion.js?v=120fps-smooth-2"></script>
-  <script defer src="player.js?v=120fps-stable-4"></script>
+  <script defer src="player.js?v=network-pack-1"></script>
 </head>
 <body>
   <header><a class="brand" href="#" aria-label="回到开头">TINY<span>STRANGE<span class="star">✳</span></span></a><span class="study">A LITTLE STRANGE / SCROLL STUDY 01</span><span class="badge">4K · 120 FPS · 1800 FRAMES</span></header>
@@ -28,6 +30,7 @@
       </div>
       <div class="scroll-hint" id="hint">向下滚动，认识你的新朋友 <span>↓</span></div>
       <div id="notice" role="status">正在读取帧序列…</div>
+      <div id="load-status" class="load-status" role="status"><span id="load-text">正在准备动画…</span><progress id="load-progress" max="100" value="0" aria-label="动画加载进度"></progress><button id="retry-load" hidden>重试加载</button></div>
     </div>
   </main>
   <aside class="controls" aria-label="动画预览控制">

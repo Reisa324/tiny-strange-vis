@@ -1,0 +1,8 @@
+/box-scroll-test/frame-packs-v1/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/box-scroll-test/frames_web_120fps_optimized/web1920/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/box-scroll-test/frames_web_120fps_optimized/web3840/*
+  Cache-Control: public, max-age=31536000, immutable

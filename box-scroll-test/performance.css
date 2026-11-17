@@ -1,3 +1,7 @@
 /* The preview panel does not need an expensive live backdrop filter. */
 .controls{backdrop-filter:none;background:#fffffff7}
 #detail-canvas{visibility:hidden;pointer-events:none}
+.load-status{position:absolute;z-index:6;bottom:180px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:11px 17px;border-radius:12px;background:#fffffff2;border:1px solid #e5e3dc;font-size:12px;white-space:nowrap}
+.load-status[hidden],#retry-load[hidden]{display:none}
+.load-status progress{width:150px;height:6px;accent-color:#9db74c}
+@media(max-width:700px){.load-status{bottom:220px;flex-wrap:wrap;justify-content:center;width:min(290px,90vw)}.load-status progress{width:120px}}
