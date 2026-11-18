@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="111.441" height="46.323" viewBox="0 0 111.441 46.323">
+  <title>vis-web.ai</title>
+  <g id="Selection">
+    <path d="M44.82 23.162 C38.84 23.162 33.43 25.592 29.51 29.512 C25.59 33.432 23.16 38.842 23.16 44.822 C23.16 38.842 20.73 33.432 16.81 29.512 C12.89 25.592 7.48 23.162 1.5 23.162 C7.48 23.162 12.89 20.732 16.81 16.812 C20.73 12.892 23.16 7.482 23.16 1.502 C23.16 13.462 32.86 23.162 44.82 23.162 Z" fill="#e6bcbd" stroke="#493732" stroke-width="3" stroke-linecap="square" stroke-linejoin="round"/>
+    <circle cx="88.279" cy="23.162" r="21.662" fill="none" stroke="#493732" stroke-width="3" stroke-linecap="square" stroke-linejoin="round"/>
+  </g>
+</svg>

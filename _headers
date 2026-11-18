@@ -1,3 +1,6 @@
+/box-scroll-test/light-packs-v1/*
+  Cache-Control: public, max-age=31536000, immutable
+
 /box-scroll-test/frame-packs-v1/*
   Cache-Control: public, max-age=31536000, immutable
 

@@ -5,16 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Tiny Strange · 包装盒滚动动画测试</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=light-layout-5">
   <link rel="stylesheet" href="performance.css">
   <script defer src="frames.js"></script>
   <script defer src="./frames_web_120fps_optimized/optimized_frames.js"></script>
   <script defer src="packed-frames.js?v=network-pack-1"></script>
-  <script defer src="frame-source.js?v=network-pack-1"></script>
+  <script defer src="light-frames.js"></script>
+  <script defer src="frame-source.js?v=chapter-recovery-1"></script>
   <script defer src="sequence-cache.js?v=network-pack-1"></script>
   <script defer src="frame-presenter.js?v=120fps-stable-4"></script>
   <script defer src="scroll-motion.js?v=120fps-smooth-2"></script>
-  <script defer src="player.js?v=network-pack-1"></script>
+  <script defer src="player.js?v=chapter-recovery-1"></script>
 </head>
 <body>
   <header><a class="brand" href="#" aria-label="回到开头">TINY<span>STRANGE<span class="star">✳</span></span></a><span class="study">A LITTLE STRANGE / SCROLL STUDY 01</span><span class="badge">4K · 120 FPS · 1800 FRAMES</span></header>
@@ -22,11 +23,12 @@
     <div class="stage" id="stage">
       <div class="screen" id="screen">
         <div class="type-wall" id="wall" aria-hidden="true"><span>A LITTLE STRANGE</span><span>SOFT FRIENDS</span><span>A LITTLE STRANGE</span><span>SOFT FRIENDS</span></div>
+        <img class="box-title-art" id="box-title" src="../assets/box-title.svg" alt="" aria-hidden="true">
         <canvas id="canvas" aria-label="Tiny Strange 包装盒动画，使用下方控件或滚动浏览"></canvas>
         <canvas id="detail-canvas" width="1" height="1" aria-hidden="true"></canvas>
-        <article class="copy left" id="front"><small>01 / HELLO, STRANGER</small><h1>一点奇怪，<br>刚好可爱。</h1><p>把柔软的朋友，装进一份小小的惊喜。</p><span class="tag">TINY STRANGE · SOFT FRIEND</span></article>
-        <article class="copy right" id="back"><small>02 / EVERY LITTLE DETAIL</small><h2>每一面，<br>都有小心思。</h2><p>转个角度，看看属于它的故事。</p><span class="tag">DESIGNED TO MAKE YOU SMILE</span></article>
-        <article class="copy left" id="reveal"><small>03 / A SOFT SURPRISE</small><h2>藏不住的<br>一点好奇。</h2><p>你好呀，你的小怪朋友来了。</p><span class="tag">A LITTLE STRANGE. A LOT TO LOVE.</span></article>
+        <article class="copy" id="front"><img class="copy-rule" src="../assets/box-rule-01.svg" alt="" aria-hidden="true"><h2>01 / THE BOX</h2><p>The box holds one friend<br>A small gift, made to be<br>opened slowly</p><span class="tag">TINY STRANGE · SOFT FRIENDS</span></article>
+        <article class="copy" id="back"><img class="copy-rule" src="../assets/box-rule-02.svg" alt="" aria-hidden="true"><h2>02 / EVERY SIDE</h2><p>Soft on the outside<br>clear in the structure<br>Turn it around. The<br>design sits on every face</p><span class="tag">SOFT, ODD, PERSONAL</span></article>
+        <article class="copy" id="reveal"><img class="copy-rule" src="../assets/box-rule-03.svg" alt="" aria-hidden="true"><h2>03 / SURPRISE</h2><p>A small friend<br>only yours. Hello<br>Your Soft Friend is here</p><span class="tag">THEY'RE ONLY YOURS.</span></article>
       </div>
       <div class="scroll-hint" id="hint">向下滚动，认识你的新朋友 <span>↓</span></div>
       <div id="notice" role="status">正在读取帧序列…</div>
@@ -35,7 +37,7 @@
   </main>
   <aside class="controls" aria-label="动画预览控制">
     <div class="transport"><button id="play" class="primary" disabled>▶ 自动播放</button><button id="prev" title="上一帧（左方向键）" aria-label="上一帧">←</button><button id="next" title="下一帧（右方向键）" aria-label="下一帧">→</button><output id="frame">0001 / 1800</output><input id="seek" type="range" min="1" max="1800" value="1" aria-label="动画帧"><button id="restart">回到开头</button><button id="collapse" title="收起面板">收起</button></div>
-    <div class="options"><span id="mode">滚动模式</span><label>节奏 <select id="pace"><option value="calm">舒缓</option><option value="balanced">标准</option><option value="detail">细看</option></select></label><label>预览精度 <select id="quality"><option value="auto">网页自动（推荐）</option><option value="web1920">1920 清晰版</option><option value="adaptive4k">4K 自适应</option><option value="original">4K 逐帧检查</option></select></label><label>背景 <select id="background"><option value="white">纯白</option><option value="checker">透明棋盘</option><option value="dark">深灰</option></select></label><label><input id="copy" type="checkbox" checked>显示示意文字</label><label><input id="loop" type="checkbox" checked>循环播放</label><span class="jump">定位 <button data-frame="337">337</button><button data-frame="749">749</button><button data-frame="1177">1177</button><button data-frame="1705">1705</button></span></div>
+    <div class="options"><span id="mode">滚动模式</span><label>节奏 <select id="pace"><option value="calm">舒缓</option><option value="balanced">标准</option><option value="detail">细看</option></select></label><label>预览精度 <select id="quality"><option value="auto">网页自动（推荐）</option><option value="light">流畅 720p</option><option value="web1920">1920 清晰版</option><option value="adaptive4k">4K 自适应</option><option value="original">4K 逐帧检查</option></select></label><label>背景 <select id="background"><option value="white">纯白</option><option value="checker">透明棋盘</option><option value="dark">深灰</option></select></label><label><input id="copy" type="checkbox" checked>显示示意文字</label><label><input id="loop" type="checkbox" checked>循环播放</label><span class="jump">定位 <button data-frame="337">337</button><button data-frame="749">749</button><button data-frame="1177">1177</button><button data-frame="1705">1705</button></span></div>
     <div class="metrics" id="metrics">读取素材信息…</div>
   </aside>
   <noscript>请在浏览器中启用 JavaScript。</noscript>

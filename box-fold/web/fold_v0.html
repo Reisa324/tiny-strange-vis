@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tiny Strange｜纸盒折叠演示</title>
+  <style>
+    :root{--brown:#493732;--lime:#b7d84b;--beige:#ddcdb8;--paper:#f6f0e7;--space:8px}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--brown);font-family:"Sofia Sans",sans-serif}button,input{font:inherit}header{position:fixed;z-index:2;top:24px;left:32px;display:flex;align-items:center;gap:16px}.brand-logo{width:156px;height:auto;display:block}.brand-copy{border-left:1px solid var(--beige);padding-left:16px}h1{font-family:Fraunces,serif;font-size:24px;line-height:1.1;margin:0 0 6px}.brand-copy p{font-size:13px;margin:0;opacity:.72}#model{position:fixed;inset:0}#status{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:14px;letter-spacing:.04em;background:var(--paper);padding:12px 16px;border-radius:8px}#controls{position:fixed;z-index:2;left:50%;bottom:24px;transform:translateX(-50%);width:min(680px,calc(100vw - 40px));padding:16px 20px;background:rgba(246,240,231,.94);border:1px solid var(--beige);border-radius:16px;box-shadow:0 12px 32px rgba(73,55,50,.12)}.control-row{display:flex;align-items:center;gap:16px}button{min-height:44px;padding:0 18px;border-radius:8px;border:1px solid var(--brown);background:var(--brown);color:var(--paper);cursor:pointer}button:disabled{cursor:default;opacity:.45}input[type=range]{flex:1;accent-color:var(--lime)}.hint{font-size:12px;opacity:.7;white-space:nowrap}.version{color:var(--brown);font-size:12px;letter-spacing:.08em}button:focus-visible,input:focus-visible{outline:3px solid var(--lime);outline-offset:3px}@media(max-width:640px){header{left:20px;top:20px}.brand-logo{width:120px}.brand-copy{display:none}#controls{bottom:16px;padding:12px}.hint{display:none}}
+  </style>
+  <script type="importmap">{"imports":{"three":"./lib/three.module.js","three/addons/":"./lib/addons/"}}</script>
+</head>
+<body>
+  <header>
+    <img class="brand-logo" src="./assets/tiny-strange-logo.png" alt="Tiny Strange Offbeat Halo Logo">
+    <div class="brand-copy"><h1>插舌盒折叠演示</h1><p>140 × 100 × 200 mm · 真实刀版结构</p></div>
+  </header>
+  <main id="model" aria-label="Tiny Strange 三维纸盒模型"></main>
+  <div id="status" role="status">正在载入真实纸盒模型…</div>
+  <div id="controls" aria-label="折叠控制">
+    <div class="control-row"><button id="play" disabled>播放</button><input id="fold" type="range" min="0" max="100" value="100" aria-label="折叠进度" disabled><span class="hint">拖动旋转 · 滚轮缩放</span><span class="version">V0</span></div>
+  </div>
+  <script type="module">
+    import * as THREE from 'three';
+    import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+    import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+    import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+
+    const host=document.getElementById('model');
+    const status=document.getElementById('status');
+    const scene=new THREE.Scene();
+    scene.background=new THREE.Color('#f6f0e7');
+    const renderer=new THREE.WebGLRenderer({antialias:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    renderer.setSize(innerWidth,innerHeight);
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+    renderer.toneMapping=THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure=0.85;
+    host.appendChild(renderer.domElement);
+    const pmrem=new THREE.PMREMGenerator(renderer);
+    scene.environment=pmrem.fromScene(new RoomEnvironment(),0.04).texture;
+    scene.add(new THREE.HemisphereLight(0xffffff,0x493732,0.6));
+    const key=new THREE.DirectionalLight(0xffffff,1.2);key.position.set(-300,500,400);scene.add(key);
+    const camera=new THREE.PerspectiveCamera(35,innerWidth/innerHeight,0.1,20000);
+    const controls=new OrbitControls(camera,renderer.domElement);
+    controls.enableDamping=true;
+
+    new GLTFLoader().load('../TinyStrange_Foldable_animated.glb',gltf=>{
+      const model=gltf.scene;
+      model.rotation.x=Math.PI/2;
+      model.traverse(object=>{
+        if(!object.isMesh)return;
+        const materials=Array.isArray(object.material)?object.material:[object.material];
+        for(const material of materials){material.side=THREE.DoubleSide;material.metalness=0;}
+      });
+      scene.add(model);
+      const mixer=new THREE.AnimationMixer(model);
+      let duration=0;
+      for(const clip of gltf.animations){const action=mixer.clipAction(clip);action.setLoop(THREE.LoopOnce,1);action.clampWhenFinished=true;action.play();duration=Math.max(duration,clip.duration);}
+      if(duration)mixer.setTime(duration-0.0001);
+      model.updateMatrixWorld(true);
+      const box=new THREE.Box3().setFromObject(model);
+      const center=box.getCenter(new THREE.Vector3());
+      const size=box.getSize(new THREE.Vector3());
+      const distance=Math.max(size.x,size.y,size.z)*2.2;
+      controls.target.copy(center);
+      camera.position.set(center.x-distance*.65,center.y+distance*.45,center.z-distance);
+      camera.lookAt(center);
+      controls.update();
+      status.hidden=true;
+      window.__foldReady=true;
+    },undefined,error=>{console.error(error);status.textContent='模型加载失败，请检查 GLB 文件路径。';});
+
+    function render(){requestAnimationFrame(render);controls.update();renderer.render(scene,camera)}
+    render();
+    addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+  </script>
+</body>
+</html>

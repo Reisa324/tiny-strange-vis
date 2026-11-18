@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tiny Strange 插舌盒折叠演示</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f6f0e7;color:#4a3833;font-family:"Sofia Sans",Arial,sans-serif}header{position:fixed;z-index:2;left:32px;top:26px}h1{font-size:24px;margin:0 0 6px}p{margin:0;font-size:13px;opacity:.75}#model{position:fixed;inset:0}#controls{position:fixed;z-index:2;left:50%;bottom:28px;transform:translateX(-50%);width:min(640px,calc(100vw - 40px));background:rgba(255,252,248,.92);border:1px solid #ddcdb8;border-radius:16px;padding:16px 20px;box-shadow:0 10px 30px #4a383322}#row{display:flex;align-items:center;gap:12px}button{border:1px solid #4a3833;background:#4a3833;color:#f6f0e7;border-radius:8px;padding:7px 12px;cursor:pointer}button.secondary{background:transparent;color:#4a3833}input[type=range]{flex:1;accent-color:#b7d84b}#value{min-width:48px;text-align:right;font-variant-numeric:tabular-nums}
+  </style>
+  <script type="importmap">{"imports":{"three":"./lib/three.module.js","three/addons/":"./lib/addons/"}}</script>
+</head>
+<body>
+  <header><h1>Tiny Strange 插舌盒</h1><p>140 × 100 × 200 mm · 拖动旋转 · 滚轮缩放</p></header>
+  <div id="model"></div>
+  <div id="controls"><div id="row"><button id="flat" class="secondary">展开</button><input id="fold" type="range" min="0" max="1" step="0.001" value="1"><button id="closed">合拢</button><span id="value">100%</span></div></div>
+  <script type="module">
+    import * as THREE from 'three';
+    import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+    import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+
+    const host=document.getElementById('model');
+    const scene=new THREE.Scene();
+    scene.background=new THREE.Color('#f6f0e7');
+    const renderer=new THREE.WebGLRenderer({antialias:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    renderer.setSize(innerWidth,innerHeight);
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+    host.appendChild(renderer.domElement);
+    const camera=new THREE.PerspectiveCamera(35,innerWidth/innerHeight,0.1,20000);
+    const controls=new OrbitControls(camera,renderer.domElement);
+    controls.enableDamping=true;
+    scene.add(new THREE.AmbientLight(0xffffff,2));
+    const key=new THREE.DirectionalLight(0xffffff,2);key.position.set(300,500,400);scene.add(key);
+    const loader=new GLTFLoader();
+    const textureLoader=new THREE.TextureLoader();
+    const slider=document.getElementById('fold');
+    const value=document.getElementById('value');
+    let model=null,closedModel=null;
+    const transforms=new Map();
+
+    function setFold(v){
+      slider.value=v;value.textContent=Math.round(v*100)+'%';
+      for(const [node,pair] of transforms){
+        node.position.lerpVectors(pair.flatPosition,pair.closedPosition,v);
+        node.quaternion.slerpQuaternions(pair.flatQuaternion,pair.closedQuaternion,v);
+      }
+    }
+    document.getElementById('flat').onclick=()=>setFold(0);
+    document.getElementById('closed').onclick=()=>setFold(1);
+    slider.addEventListener('input',()=>setFold(Number(slider.value)));
+
+    function applyTextures(root){
+      let meshIndex=0;
+      root.traverse(object=>{
+        if(!object.isMesh)return;
+        const index=meshIndex++;
+        const panels={
+          0:'front',1:'front',2:'left',3:'left',4:'back',5:'back',6:'right',7:'right',
+          10:'flap-top-right',11:'flap-top-right',12:'flap-bottom-right',13:'flap-bottom-right',
+          14:'flap-top-back',15:'flap-top-back',16:'flap-bottom-back',17:'flap-bottom-back',
+          18:'flap-top-left',19:'flap-top-left',20:'flap-bottom-left',21:'flap-bottom-left',
+          22:'flap-top-front',23:'flap-top-front',24:'flap-bottom-front',25:'flap-bottom-front'
+        };
+        if(index===8||index===9){object.material=new THREE.MeshBasicMaterial({color:'#f6f0e7'});return;}
+        const panel=panels[index];
+        if(!panel)return;
+        const side=index%2===0?'outside':'inside';
+        const texture=textureLoader.load(`../textures/${side}_${panel}.png`);
+        texture.colorSpace=THREE.SRGBColorSpace;
+        texture.flipY=false;
+        object.material=new THREE.MeshBasicMaterial({map:texture,side:index%2===0?THREE.FrontSide:THREE.BackSide});
+      });
+    }
+
+    function loadModel(url){return new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));}
+    Promise.all([loadModel('../TinyStrange_PromotionalBox_flat.glb'),loadModel('../TinyStrange_PromotionalBox_closed.glb')]).then(([flat,closed])=>{
+      model=flat.scene;closedModel=closed.scene;
+      applyTextures(model);
+      applyTextures(closedModel);
+      const closedNodes=[];
+      closedModel.traverse(node=>closedNodes.push(node));
+      let index=0;
+      model.traverse(node=>{
+        const closedNode=closedNodes[index++];
+        transforms.set(node,{
+          flatPosition:node.position.clone(),flatQuaternion:node.quaternion.clone(),
+          closedPosition:closedNode.position.clone(),closedQuaternion:closedNode.quaternion.clone()
+        });
+      });
+      scene.add(model);
+      const box=new THREE.Box3().setFromObject(closedModel);
+      const center=box.getCenter(new THREE.Vector3());
+      const size=box.getSize(new THREE.Vector3()).length();
+      controls.target.copy(center);
+      camera.position.set(center.x,center.y-size*1.1,center.z+size*1.7);
+      camera.lookAt(center);
+      controls.update();
+      setFold(1);
+    }).catch(error=>{console.error(error);document.querySelector('header p').textContent='模型加载失败，请检查文件路径。'});
+    function render(){requestAnimationFrame(render);controls.update();renderer.render(scene,camera)}
+    render();
+    addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+  </script>
+</body>
+</html>

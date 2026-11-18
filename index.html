@@ -4,13 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tiny Strange — VIS Booklet</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=film-seek-1">
   <script src="swarm.js"></script>
+  <script src="rejects.js?v=2026-11-18-trajectory" defer></script>
   <script>
     const swarmPages = () => Array.from(document.querySelectorAll('section.page'));
     const swarmRunPages = new Set();
     let swarmCalmSince = 0;
     let swarmHasScrolled = false;
+    let foldChapter;
 
     const inSwarmViewport = (node) => {
       const rect = node.getBoundingClientRect();
@@ -38,12 +40,17 @@
       );
       if (!pages.length) return;
       pages.forEach((page) => swarmRunPages.add(page));
-      Swarm.run({ agents: 5, mobileAgents: 5, tour: false, returnToTop: false, maxSeconds: 600 });
+      Swarm.run({ agents: 5, mobileAgents: 5, speed: 1, targetSeconds: Infinity, tour: false, returnToTop: false, maxSeconds: 600 });
     };
 
     const watchSwarm = (now) => {
+      updateCurrentPageLabel();
       const state = Swarm.state();
-      if (!state) {
+      if (foldChapter && inSwarmViewport(foldChapter)) {
+        if (state) Swarm.skip();
+        finishSwarmRun();
+        swarmCalmSince = 0;
+      } else if (!state) {
         finishSwarmRun();
         startSwarmIfNeeded();
         swarmCalmSince = 0;
@@ -57,7 +64,7 @@
           swarmCalmSince = 0;
         } else if (!swarmCalmSince) {
           swarmCalmSince = now;
-        } else if (now - swarmCalmSince >= 800) {
+        } else if (now - swarmCalmSince >= 200) {
           Swarm.end();
           swarmCalmSince = 0;
         }
@@ -65,20 +72,244 @@
       window.requestAnimationFrame(watchSwarm);
     };
 
+    const updateCurrentPageLabel = () => {
+      const label = document.querySelector('.current-page-label');
+      if (!label) return;
+      const marker = window.innerHeight * 0.1;
+      const current = Array.from(document.querySelectorAll('section.page[data-label]')).find((page) => {
+        const rect = page.getBoundingClientRect();
+        return rect.top <= marker && rect.bottom > marker;
+      });
+      label.hidden = !current;
+      if (!current) return;
+      label.textContent = current.dataset.label;
+      label.classList.toggle('is-light', current.dataset.labelTone === 'light');
+    };
+
+    const setupProductFilm = () => {
+      const video = document.querySelector('.product-film');
+      const start = document.querySelector('.product-film-start');
+      const status = document.querySelector('.product-film-status');
+      if (!video || !start || !status) return;
+      video.addEventListener('contextmenu', (event) => event.preventDefault());
+      start.hidden = false;
+      const controller = new AbortController();
+      let preparation, objectUrl;
+      const prepare = () => {
+        preparation ??= (async () => {
+          status.textContent = 'Loading film…';
+          // A 200 response contains the entire file. A blob URL lets the native
+          // timeline seek even when the server ignores byte ranges.
+          const response = await fetch(video.dataset.src, {
+            headers: { Range: 'bytes=0-1' },
+            signal: controller.signal
+          });
+          if (!response.ok || !response.headers.get('Content-Type')?.toLowerCase().startsWith('video/mp4')) {
+            throw new Error('Film unavailable');
+          }
+          if (response.status === 206 && response.headers.get('Content-Range')?.startsWith('bytes 0-1/')) {
+            await response.body?.cancel();
+            video.src = video.dataset.src;
+          } else if (response.status === 200) {
+            objectUrl = URL.createObjectURL(await response.blob());
+            video.src = objectUrl;
+          } else {
+            throw new Error('Invalid film response');
+          }
+          const shouldFocus = document.activeElement === start;
+          start.hidden = true;
+          status.textContent = '';
+          if (shouldFocus) video.focus();
+          return true;
+        })().catch(() => {
+          preparation = null;
+          if (!controller.signal.aborted) {
+            start.textContent = 'Retry film';
+            status.textContent = 'The film could not load.';
+          }
+          return false;
+        });
+        return preparation;
+      };
+      start.addEventListener('click', async () => {
+        if (await prepare()) await video.play().catch(() => {});
+      });
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(entries => {
+          if (!entries.some(entry => entry.isIntersecting)) return;
+          observer.disconnect();
+          prepare();
+        }, { rootMargin: '150% 0px' });
+        observer.observe(video);
+      }
+      window.addEventListener('pagehide', event => {
+        if (event.persisted) return;
+        controller.abort();
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+      });
+    };
+
+    const setupChapter = (chapter, kind, configure, preloadTarget = chapter) => {
+      const frame = chapter.querySelector('iframe');
+      const preview = chapter.querySelector('.chapter-preview');
+      const status = chapter.querySelector('.chapter-status');
+      const retry = chapter.querySelector('.chapter-retry');
+      let attempt = 0;
+      let listeners, deadline, configured, painted, timedOut;
+      const show = (state, message = '') => {
+        chapter.dataset.chapterState = state;
+        chapter.classList.toggle('is-ready', state === 'ready');
+        frame.inert = state !== 'ready';
+        preview.hidden = state === 'ready';
+        retry.hidden = state !== 'failed';
+        const statusText = kind === 'fold' && state === 'loading' ? '' : message;
+        if (status.textContent !== statusText) status.textContent = statusText;
+      };
+      const reportFailure = (message = '此章节加载失败，可以重试。') => {
+        timedOut = false;
+        clearTimeout(deadline);
+        show('failed', message);
+      };
+      const watchProgress = () => {
+        clearTimeout(deadline);
+        deadline = setTimeout(() => {
+          reportFailure('此章节等待时间较长，可以重试。');
+          timedOut = true;
+        }, 60000);
+      };
+      const showIfReady = () => {
+        if (!configured || !painted) return;
+        clearTimeout(deadline);
+        show('ready');
+      };
+      const load = () => {
+        listeners?.abort();
+        listeners = new AbortController();
+        configured = painted = timedOut = false;
+        const url = new URL(frame.dataset.src, location.href);
+        url.searchParams.set('chapter-attempt', String(++attempt));
+        show('loading', '正在准备动画…');
+        watchProgress();
+        frame.src = url.href;
+      };
+      const start = () => { if (!attempt) load(); };
+      retry.addEventListener('click', load);
+      window.addEventListener('message', event => {
+        if (event.origin !== location.origin || event.source !== frame.contentWindow) return;
+        const data = event.data;
+        if (data?.chapter !== kind || data.attempt !== String(attempt)) return;
+        if (data.state === 'ready') {
+          painted = true;
+          showIfReady();
+        } else if (data.state === 'failed') {
+          painted = false;
+          reportFailure();
+        } else if (data.state === 'loading' && (timedOut || chapter.dataset.chapterState === 'loading')) {
+          let message = '正在准备动画…';
+          if (Number.isInteger(data.percent) && data.percent >= 0 && data.percent <= 100) {
+            message = `正在准备动画 · ${data.percent}%`;
+          }
+          timedOut = false;
+          show('loading', message);
+          watchProgress();
+        }
+      });
+      frame.addEventListener('load', () => {
+        if (!attempt || configured) return;
+        const doc = frame.contentDocument;
+        if (doc?.URL === 'about:blank') return;
+        if (!doc || new URL(doc.URL).searchParams.get('chapter-attempt') !== String(attempt) ||
+            !configure(frame, doc, listeners.signal)) {
+          reportFailure();
+          return;
+        }
+        configured = true;
+        showIfReady();
+      });
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(entries => {
+          if (!entries.some(entry => entry.isIntersecting)) return;
+          start();
+          observer.disconnect();
+        }, { rootMargin: '100% 0px' });
+        observer.observe(chapter);
+        if (preloadTarget !== chapter) observer.observe(preloadTarget);
+      } else {
+        start();
+      }
+      return start;
+    };
+
+    const setupBoxChapter = () => {
+      const chapter = document.querySelector('.box-chapter');
+      if (!chapter) return;
+      const start = setupChapter(chapter, 'sequence', (frame, doc, signal) => {
+        const pace = doc.getElementById('pace');
+        if (!pace || !frame.contentWindow.preview) return false;
+        const style = doc.createElement('style');
+        style.textContent = `
+          @font-face{font-family:Fraunces;src:url('../assets/fonts/Fraunces-Regular.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
+          @font-face{font-family:'Sofia Sans';src:url('../assets/fonts/SofiaSans-Light.ttf') format('truetype');font-style:normal;font-weight:300;font-display:swap}
+          @font-face{font-family:'Sofia Sans';src:url('../assets/fonts/SofiaSans-Medium.ttf') format('truetype');font-style:normal;font-weight:500;font-display:swap}
+          header,.type-wall,.scroll-hint,#notice,.options,.metrics,.controls,.load-status{display:none!important}
+        `;
+        doc.head.appendChild(style);
+        pace.value = 'balanced';
+        pace.dispatchEvent(new Event('change', { bubbles: true }));
+        const syncOuter = () => {
+          const range = Math.max(1, chapter.offsetHeight - window.innerHeight);
+          const local = Math.max(0, Math.min(range, window.scrollY - chapter.offsetTop));
+          const innerRange = Math.max(1, doc.documentElement.scrollHeight - frame.contentWindow.innerHeight);
+          frame.contentWindow.scrollTo(0, local / range * innerRange);
+        };
+        const syncHeight = () => {
+          chapter.style.height = `${doc.documentElement.scrollHeight}px`;
+          syncOuter();
+        };
+        window.addEventListener('scroll', syncOuter, { passive: true, signal });
+        let resizeTimer;
+        frame.contentWindow.addEventListener('resize', () => {
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(syncHeight, 250);
+        }, { signal });
+        signal.addEventListener('abort', () => clearTimeout(resizeTimer), { once: true });
+        syncHeight();
+        return true;
+      });
+      const cover = Array.from(document.querySelectorAll('.cover img')).filter(inSwarmViewport);
+      Promise.allSettled(cover.map(img => img.decode?.())).then(() => {
+        if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 1200 });
+        else setTimeout(start, 0);
+      });
+    };
+
+    const setupFoldChapter = () => {
+      foldChapter = document.querySelector('.fold-chapter');
+      if (!foldChapter) return;
+      const sequence = document.querySelector('.box-chapter');
+      setupChapter(foldChapter, 'fold', frame => Boolean(frame.contentWindow.__foldDemo), sequence || foldChapter);
+    };
+
     window.addEventListener('scroll', () => {
       swarmHasScrolled = true;
+      updateCurrentPageLabel();
     }, { passive: true });
+    window.addEventListener('resize', updateCurrentPageLabel);
+    window.addEventListener('DOMContentLoaded', updateCurrentPageLabel);
+    window.addEventListener('DOMContentLoaded', setupProductFilm);
+    window.addEventListener('DOMContentLoaded', setupBoxChapter);
+    window.addEventListener('DOMContentLoaded', setupFoldChapter);
     window.requestAnimationFrame(watchSwarm);
   </script>
 </head>
 <body>
-  <main class="booklet" aria-label="Tiny Strange VIS booklet, pages 1 to 5">
+  <main class="booklet" aria-label="Tiny Strange VIS booklet, 24 content pages, product film, packaging and interactive folding chapters">
     <section class="page cover" aria-label="Page 1: Cover">
       <img class="cover-shadow" src="assets/stool-shadow.png" alt="" draggable="false">
-      <img class="cover-rabbit" src="assets/奶油色长耳兔坐在工业风木凳上.webp" alt="Cream-coloured long-eared rabbit sitting on an industrial wooden stool" draggable="false">
+      <img class="cover-rabbit" src="assets/奶油色长耳兔坐在工业风木凳上.png" alt="Cream-coloured long-eared rabbit sitting on an industrial wooden stool" draggable="false">
     </section>
 
-    <section class="page overview" aria-label="Page 2: Brand and Project Overview">
+    <section class="page overview" aria-label="Page 2: Brand and Project Overview" data-label="Overview">
       <img class="artwork-title title-tiny" src="assets/tiny.svg" alt="TINY" draggable="false">
       <img class="artwork-title title-strange" src="assets/strange.svg" alt="STRANGE" draggable="false">
 
@@ -126,15 +357,20 @@ ORIGIN: China
 MARKET: United States</div>
     </section>
 
-    <section class="page image-page" aria-label="Page 3: Rabbit pattern">
-      <img class="pattern-image" src="assets/米白色绒面兔子拼布图案.webp" alt="Pattern of cream-coloured plush rabbits with small accessories" draggable="false">
+    <section class="page image-page full-bleed" aria-label="Page 3: Rabbit pattern">
+      <img class="pattern-image" src="assets/米白色绒面兔子拼布图案.png" alt="Pattern of cream-coloured plush rabbits with small accessories" draggable="false">
     </section>
 
-    <section class="page image-page" aria-label="Page 4: Rabbit in a box">
-      <img class="box-image" src="assets/纸箱中的奶油色兔兔.webp" alt="Cream-coloured rabbit plush inside a cardboard box" draggable="false">
+    <section class="page image-page full-bleed" aria-label="Page 4: Soft Friends scenes">
+      <img class="scene-image street-image" src="assets/street-table.webp?v=2026-11-18-original-color" alt="A table by the street" draggable="false">
+      <img class="scene-image sofa-image" src="assets/quiet-sofa.webp?v=2026-11-18-original-color" alt="A quiet sofa" draggable="false">
+      <img class="scene-image afternoon-image" src="assets/long-afternoon.webp?v=2026-11-18-original-color" alt="A long afternoon" draggable="false">
+      <div class="scene-caption street-caption">A table by the street</div>
+      <div class="scene-caption sofa-caption">A quiet sofa</div>
+      <div class="scene-caption afternoon-caption">A long afternoon</div>
     </section>
 
-    <section class="page peer-page" aria-label="Page 5: Peer brands">
+    <section class="page peer-page" aria-label="Page 5: Peer brands" data-label="Peer">
       <img class="peer-art" src="assets/peer.svg" alt="PEER" draggable="false">
 
       <img class="logo logo-jellycat" src="assets/jellycat.png" alt="Jellycat London" draggable="false">
@@ -194,6 +430,277 @@ Key observation: Customers join the
 making process through stuffing,
 dressing and naming.</div>
     </section>
+
+    <section class="page research-page" aria-label="Page 6: Research" data-label="Research">
+      <div class="body-copy research-copy research-soft">Soft fur
+warm light
+rounded forms</div>
+      <div class="body-copy research-copy research-strange">A strange little mark and a lime spark</div>
+      <div class="body-copy research-copy research-friend">One friend close up
+and only yours</div>
+
+      <img class="research-image research-tnt" src="assets/research-tnt.webp?v=2026-11-18-original-color" alt="TNT character research poster" draggable="false">
+      <img class="research-image research-rolls" src="assets/research-rolls.webp?v=2026-11-18-original-color" alt="TNT character rolls" draggable="false">
+      <img class="research-image research-bag" src="assets/research-bag.webp?v=2026-11-18-original-color" alt="Dark Milk tote bag" draggable="false">
+      <img class="research-image research-darkmilk" src="assets/research-darkmilk.webp?v=2026-11-18-original-color" alt="Dark Milk packaging range" draggable="false">
+      <img class="research-image research-candies" src="assets/research-candies.webp?v=2026-11-18-original-color" alt="Dark Milk sweet wrappers" draggable="false">
+      <img class="research-image research-cans" src="assets/research-cans.webp?v=2026-11-18-original-color" alt="TNT character cans" draggable="false">
+
+      <img class="research-tag research-tag-soft" src="assets/research-tag-soft.svg" alt="Soft" draggable="false">
+      <img class="research-tag research-tag-odd" src="assets/research-tag-odd.svg" alt="Odd" draggable="false">
+      <img class="research-tag research-tag-personal" src="assets/research-tag-personal.svg" alt="Personal" draggable="false">
+    </section>
+
+    <section class="page logo-page" aria-label="Page 7: Logo" data-label="Logo">
+      <img class="logo-title-art" src="assets/logo-title.svg" alt="Logo" draggable="false">
+      <div class="body-copy logo-body">A soft mark with a slightly
+odd orbit.
+
+The same lockup is used on
+paper, on the box, and on a
+small woven label.
+
+Keep the space around it
+clear, and let the stitch stay
+close to the original form.</div>
+      <img class="logo-lockup" src="assets/logo-lockup.webp?v=2026-11-18-original-color" alt="Tiny Strange cloud and orbit logo" draggable="false">
+      <img class="logo-label" src="assets/logo-label.webp?v=2026-11-18-original-color" alt="Tiny Strange embroidered woven label" draggable="false">
+    </section>
+
+    <section class="page color-page" aria-label="Page 8: Color" data-label="Color" data-label-tone="light">
+      <div class="color-block color-cocoa"></div>
+      <div class="color-block color-mist"></div>
+      <div class="color-block color-oat"></div>
+      <div class="color-block color-lime"></div>
+      <div class="color-copy color-copy-cocoa">Cocoa Brown
+#4A3833</div>
+      <div class="color-copy color-copy-mist">Mist Pink
+#EABFC0</div>
+      <div class="color-copy color-copy-lime">Fresh Lime
+#B7D84B</div>
+      <div class="color-copy color-copy-oat">Oat Beige
+#DDCDB8</div>
+    </section>
+
+    <section class="page type-page" aria-label="Page 9: Type" data-label="Type">
+      <img class="type-title-art" src="assets/type-title.svg" alt="Type" draggable="false">
+      <div class="body-copy type-body">Fraunces is the serif. Sofia Sans is
+the sans. 
+
+They can share a title, a note, or
+a short line, as long as the two sit
+clearly together. 
+
+Do not add a third typeface. Let
+the contrast come from weight,
+size, and the space around the
+words.</div>
+      <img class="type-samples-art" src="assets/type-samples.svg" alt="Sofia Sans and Fraunces type specimens" draggable="false">
+    </section>
+
+    <section class="page pattern-page" aria-label="Page 10: Pattern" data-label="Pattern">
+      <img class="pattern-title-art" src="assets/pattern-title.svg" alt="Pattern" draggable="false">
+      <div class="body-copy pattern-body">The pattern is a soft grid of
+open circles.
+
+It can sit on a box, a card, or a
+quiet field of colour, without
+competing with the mark.
+
+Keep the spacing even, and
+let the circles stay open.</div>
+      <img class="pattern-grid-image" src="assets/pattern-grid.webp?v=2026-11-18-original-color" alt="Open-circle Tiny Strange pattern" draggable="false">
+      <img class="pattern-icons-art" src="assets/pattern-icons.svg" alt="Sparkle and open circle" draggable="false">
+    </section>
+
+    <section class="film-section" aria-label="Tiny Strange product film">
+      <video class="product-film" data-src="assets/product-film.mp4" controls controlsList="nodownload" playsinline preload="none" aria-label="Tiny Strange product film" data-swarm-skip></video>
+      <div class="product-film-prompt" data-swarm-skip>
+        <button class="product-film-start" type="button" hidden>Play film</button>
+        <p class="product-film-status" role="status"></p>
+        <noscript><a class="product-film-start" href="assets/product-film.mp4">Open film</a></noscript>
+      </div>
+    </section>
+
+    <section class="page oat-page" aria-label="Page 11: Oat" data-label="Oat">
+      <img class="oat-title-art" src="assets/oat-title.svg" alt="Oat" draggable="false">
+      <div class="body-copy oat-body">A cream lop-eared rabbit with no
+mouth and small, rounded hands.
+The fur is short and dense, about
+two to four millimetres, made to
+feel soft in the hand and a little
+odd at first sight.
+
+One body, eighteen centimetres.
+The same size for every Soft
+Friend, so the difference lives in
+the face, the ears, and the marks
+you choose. They’re only yours.</div>
+      <img class="oat-rabbit-image" src="assets/oat-rabbit.webp?v=2026-11-18-original-color" alt="Oat, a cream lop-eared rabbit" draggable="false">
+    </section>
+
+    <section class="page parts-page" aria-label="Page 12: Make It Yours" data-label="Make It Yours">
+      <img class="parts-title-art" src="assets/parts-title.svg" alt="Make It Yours" draggable="false">
+      <div class="body-copy parts-body">Start with Oat, then add the pieces
+you like: a ribbon, a pin, a hat, a
+scarf, or a tiny bag. The body stays
+the same. The look is yours.
+
+Parts are made to come on and off,
+so a Soft Friend can change with a
+mood, a colour, or a season. Keep
+the additions small, and let the face
+stay clear.</div>
+      <img class="parts-main-image" src="assets/parts-main.webp?v=2026-11-18-original-color" alt="Oat wearing a small bag" draggable="false">
+      <img class="parts-left-image" src="assets/parts-left.webp?v=2026-11-18-original-color" alt="Oat with a small accessory" draggable="false">
+      <img class="parts-right-image" src="assets/parts-right.webp?v=2026-11-18-original-color" alt="Oat with another small accessory" draggable="false">
+    </section>
+
+    <section class="page image-page full-bleed" aria-label="Page 13: A new friend">
+      <img class="full-scene-image box-scene-image" src="assets/scene-box.webp?v=2026-11-18-original-color" alt="A new friend looking out from a box" draggable="false">
+      <div class="full-scene-caption box-scene-caption">A new friend, already looking out</div>
+    </section>
+
+    <section class="page image-page full-bleed" aria-label="Page 14: Oat on a hill">
+      <img class="full-scene-image hill-scene-image" src="assets/scene-hill.webp?v=2026-11-18-original-color" alt="Oat taking the long way down a grassy hill" draggable="false">
+      <div class="full-scene-caption hill-scene-caption">Oat takes the long way down the hill</div>
+    </section>
+
+    <section class="page image-page full-bleed" aria-label="Page 15: Oat in a field">
+      <img class="full-scene-image field-scene-image" src="assets/scene-field.webp?v=2026-11-18-original-color" alt="Oat wearing headphones in a field" draggable="false">
+      <div class="full-scene-caption field-scene-caption">The field is loud. The song is not</div>
+    </section>
+
+    <section class="page image-page full-bleed" aria-label="Page 16: Oat with an umbrella">
+      <img class="full-scene-image umbrella-scene-image" src="assets/scene-umbrella.webp?v=2026-11-18-original-color" alt="Oat under a small umbrella in the rain" draggable="false">
+      <div class="full-scene-caption umbrella-scene-caption">A small umbrella, and weather that does not mind</div>
+    </section>
+
+    <section class="page image-page full-bleed" aria-label="Page 17: Oat in a quiet room">
+      <img class="full-scene-image room-scene-image" src="assets/scene-room.webp?v=2026-11-18-original-color" alt="Oat sitting beside a chair in a quiet room" draggable="false">
+      <div class="full-scene-caption room-scene-caption">A quiet room, and a friend who stayed</div>
+    </section>
+
+    <section class="box-chapter" aria-label="Tiny Strange packaging scroll chapter">
+      <iframe class="box-frame" data-src="box-scroll-test/?v=chapter-recovery-1" title="Tiny Strange packaging scroll animation" loading="eager" inert></iframe>
+      <div class="chapter-preview">
+        <img src="assets/asset-03.webp?v=2026-11-18-original-color" loading="lazy" width="320" height="320" alt="Tiny Strange gift box">
+        <p class="chapter-status" role="status"></p>
+        <button class="chapter-retry" type="button" hidden>重试包装动画</button>
+      </div>
+    </section>
+
+    <section class="fold-chapter" aria-label="Tiny Strange interactive folding chapter" data-swarm-skip>
+      <iframe class="fold-frame" data-src="box-fold/web/fold.html?v=chapter-recovery-1" title="Tiny Strange real-time folding animation" loading="eager" inert></iframe>
+      <div class="chapter-preview">
+        <img src="assets/asset-02.webp?v=2026-11-18-original-color" loading="lazy" width="320" height="320" alt="Tiny Strange packaging dieline">
+        <p class="chapter-status" role="status"></p>
+        <button class="chapter-retry" type="button" hidden>重试折叠演示</button>
+      </div>
+    </section>
+
+    <section class="page box-type-page" aria-label="Page 19: Type On The Box" data-label="Packaging">
+      <img class="box-type-title" src="assets/box-type-title.svg" alt="Type On The Box" draggable="false">
+      <div class="body-copy box-type-body">The box uses the words already in the brand. Soft Friends,
+Soft to hold, and a few short lines are spaced out like a small
+typesetting exercise, so the package can be read as a layout
+as well as a gift.</div>
+      <img class="box-type-samples" src="assets/box-type-samples.webp?v=2026-11-18-original-color" alt="Tiny Strange typography arrangements for the box" draggable="false">
+    </section>
+
+    <section class="page assets-page" aria-label="Page 20: Assets" data-label="Assets">
+      <img class="asset-01" src="assets/asset-01.webp?v=2026-11-18-original-color" alt="Oat lying down" draggable="false">
+      <img class="asset-02" src="assets/asset-02.webp?v=2026-11-18-original-color" alt="Tiny Strange packaging dieline" draggable="false">
+      <img class="asset-03" src="assets/asset-03.webp?v=2026-11-18-original-color" alt="Tiny Strange gift box" draggable="false">
+      <img class="asset-04" src="assets/asset-04.webp?v=2026-11-18-original-color" alt="Oat, front view" draggable="false">
+      <img class="asset-05" src="assets/asset-05.webp?v=2026-11-18-original-color" alt="Oat wearing a small bag" draggable="false">
+      <img class="asset-06" src="assets/asset-06.webp?v=2026-11-18-original-color" alt="Oat, small seated view" draggable="false">
+      <img class="asset-07" src="assets/asset-07.webp?v=2026-11-18-original-color" alt="Oat, full-length view" draggable="false">
+      <img class="asset-08" src="assets/asset-08.webp?v=2026-11-18-original-color" alt="Tiny Strange cloud and orbit mark" draggable="false">
+      <img class="asset-09" src="assets/asset-09.webp?v=2026-11-18-original-color" alt="Tiny Strange character card" draggable="false">
+      <img class="asset-10" src="assets/asset-10.webp?v=2026-11-18-original-color" alt="Tiny Strange thank-you card" draggable="false">
+      <img class="asset-11" src="assets/asset-11.webp?v=2026-11-18-original-color" alt="Soft Friends room scene" draggable="false">
+      <img class="asset-12" src="assets/asset-12.webp?v=2026-11-18-original-color" alt="They’re only yours poster" draggable="false">
+    </section>
+
+    <section class="page card-page" aria-label="Page 21: Card" data-label="Card">
+      <img class="card-title" src="assets/card-title.svg" alt="Thank You" draggable="false">
+      <div class="body-copy card-body">A small card goes home with
+every friend.
+
+Thank you sits large, and a short
+line tucks into the mark: for
+bringing your friend home.
+
+Keep the orbit and the spark
+close to the original form.</div>
+      <img class="card-main" src="assets/card-main.webp?v=2026-11-18-original-color" alt="Tiny Strange thank-you card on a tabletop" draggable="false">
+      <img class="card-small" src="assets/card-small.webp?v=2026-11-18-original-color" alt="Tiny Strange thank-you card artwork" draggable="false">
+    </section>
+
+    <section class="page site-page" aria-label="Page 22: Site" data-label="Site">
+      <img class="site-title" src="assets/site-title.svg" alt="The Site" draggable="false">
+      <div class="body-copy site-body">The site is a quiet room you can
+walk into.
+
+Soft Friends sit in the light, and
+a short line stays in the picture:
+Soft Friends for Your Own
+Strange World.
+
+It is a place to look, and then to
+meet the collection.</div>
+      <img class="site-main" src="assets/site-main.webp?v=2026-11-18-original-color" alt="Tiny Strange website on a laptop" draggable="false">
+      <img class="site-small" src="assets/site-small.webp?v=2026-11-18-original-color" alt="Tiny Strange website on a small screen" draggable="false">
+    </section>
+
+    <section class="page poster-page" aria-label="Page 23: Poster" data-label="Poster">
+      <img class="poster-title" src="assets/poster-title.svg" alt="The Poster" draggable="false">
+      <div class="body-copy poster-body">A short line does the
+talking: They’re only yours.
+
+Below it, a mood, a few
+colours, and a word you
+like are enough to start a
+Soft Friend.
+
+The same poster can sit in
+a street, or on a quiet page.</div>
+      <img class="poster-main" src="assets/poster-main.webp?v=2026-11-18-original-color" alt="They’re only yours poster at a street bus stop" draggable="false">
+      <img class="poster-small" src="assets/poster-small.webp?v=2026-11-18-original-color" alt="They’re only yours poster artwork" draggable="false">
+    </section>
+
+    <section class="page mailer-page" aria-label="Page 24: Mailer" data-label="Mailer">
+      <img class="mailer-title" src="assets/mailer-title.svg" alt="The Mailer" draggable="false">
+      <div class="body-copy mailer-body">The box is plain, and the pattern
+does the soft work.
+
+Tiny Strange sits with Soft, Odd,
+Personal, and one short line: Soft
+things for your own little world.
+
+It is a parcel, and also the first
+thing you see.</div>
+      <img class="mailer-main" src="assets/mailer-main.webp?v=2026-11-18-original-color" alt="A person holding a Tiny Strange patterned mailer box" draggable="false">
+      <img class="mailer-small" src="assets/mailer-small.webp?v=2026-11-18-original-color" alt="Tiny Strange mailer artwork" draggable="false">
+    </section>
+
+    <section class="page rejects-page" aria-label="Page 25: The rejects" data-label="Process" data-swarm-skip>
+      <img class="rejects-title" src="assets/rejects-title.svg" alt="The rejects" draggable="false">
+      <div class="body-copy rejects-body">Not every idea stays.
+
+The weak drafts go in the bin, so
+the strongest form can remain.
+
+What you see is what survived.</div>
+      <button class="paper-ball rejects-paper-small" type="button" data-paper-ball="small" aria-label="Crumpled paper. Drag it to the bin or throw it off screen."><img src="assets/rejects-paper-small.webp?v=2026-11-18-original-color" alt="" draggable="false"></button>
+      <div class="bin-contents"></div>
+      <img class="rejects-bin" src="assets/rejects-bin.webp?v=2026-11-18-bin-mask" alt="Waste-paper basket. Paper dropped inside stays visible and can be dragged back out." draggable="false">
+      <button class="paper-ball rejects-paper-bottom" type="button" data-paper-ball="bottom" aria-label="Crumpled paper. Drag it to the bin or throw it off screen."><img src="assets/rejects-paper-bottom.webp?v=2026-11-18-original-color" alt="" draggable="false"></button>
+      <button class="paper-ball rejects-paper-top" type="button" data-paper-ball="top" aria-label="Crumpled paper. Drag it to the bin or throw it off screen."><img src="assets/rejects-paper-top.webp?v=2026-11-18-original-color" alt="" draggable="false"></button>
+      <button class="rejects-collage" type="button" data-crumple-source aria-label="Crumple the large sheet of rejected designs"><img src="assets/rejects-collage.webp?v=2026-11-18-original-color" alt="Crumpled sheet of rejected Tiny Strange designs" draggable="false"></button>
+    </section>
   </main>
+  <div class="current-page-label" data-swarm-skip aria-hidden="true" hidden></div>
 </body>
 </html>
